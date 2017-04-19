@@ -80,7 +80,7 @@ int main(void)
         return -1 ;
     }
 
-    if(pipe(pipe_child1) < 0) {
+    if(pipe(pipe_child2) < 0) {
         perror("Error creating pipe for child2\n") ;
         return -1 ;
     }
@@ -123,6 +123,8 @@ int main(void)
             
             message_number_child2++;
             
+            gettimeofday(&end, NULL);
+            
             calculate_time(time, start, end);
             
             char final_message[BUFFER];
@@ -151,7 +153,7 @@ int main(void)
         close(pipe_child1[WRITE]);
 
         /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida' */
-        read(pipe_child1[READ], str_recebida, sizeof(str_recebida));
+        read(pipe_child1[READ], str_recebida, sizeof(str_recebida_child1));
 
         printf("String lida pelo pai no filho dorminhoco: '%s'\n\n", str_recebida);
         
