@@ -162,42 +162,44 @@ int main(void)
         }
     }
     
+    FILE *file = fopen("output.txt", "w");
+    if (file == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+    
     int result;
-    while(calculate_current_time(start) < 30){
-        //largest_file_descriptor = get_largest_file_descriptor(pipe_child1, pipe_child2);
+    while(calculate_current_time(start) < 30){        
         FD_ZERO(&read_set);
         FD_SET(pipe_child1[READ], &read_set);
         FD_SET(pipe_child2[READ], &read_set);
-        //printf("teste\n");
-        result = select(get_largest_file_descriptor(pipe_child1, pipe_child2)+1, &read_set, NULL, NULL, NULL);
-        //printf("teste2\n");
-        printf("%d\n", result);
 
+        result = select(get_largest_file_descriptor(pipe_child1, pipe_child2)+1, &read_set, NULL, NULL, NULL);
+        
         /* Processo Pai*/
         char str_recebida_child1[BUFFER];
         char str_recebida_child2[BUFFER];
         
-        close(pipe_child1[WRITE]);
-        close(pipe_child2[WRITE]);
-        
         if (result != -1){
             if (FD_ISSET(pipe_child1[READ], &read_set)){
+                close(pipe_child1[WRITE]);
                 /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida' */
                 read(pipe_child1[READ], str_recebida_child1, sizeof(str_recebida_child1));
-                if(strcmp(str_recebida_child1, "")){
-                    printf("String lida pelo pai no filho dorminhoco: '%s'\n\n", str_recebida_child1);
-                }
+                printf("%s\n", str_recebida_child1);
             }
             if (FD_ISSET(pipe_child2[READ], &read_set)){
+                close(pipe_child2[WRITE]);
                 /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida' */
                 read(pipe_child2[READ], str_recebida_child2, sizeof(str_recebida_child2));
-                
-                printf("String lida pelo pai no filho ativo: '%s'\n\n", str_recebida_child2);
+                printf("%s\n", str_recebida_child2);
             }
         }
-         if (result == -1)
-          perror("select()");
+        if (result == -1)
+            perror("select()");
     }
+    
+    fclose(file);
        
     *is_parent_running=0;
     
