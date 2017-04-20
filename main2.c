@@ -170,9 +170,11 @@ int main(void)
             char final_message[BUFFER];
             sprintf(end_of_final_message, "Mensagem %02d do filho ativo <", message_number_child2);
 
-
-            scanf("%s", user_message);
-            getchar();
+            fgets (user_message, BUFFER, stdin);
+            int size = strlen(user_message);
+            user_message[size - 1] = '\0'; // como o fgets pega a quebra de linha, atualiza-se a string sem ela
+            //scanf("%s", user_message);
+            //getchar();
 
             strcat(user_message, ">");
             strcat(end_of_final_message, user_message);
