@@ -28,7 +28,7 @@ int get_largest_file_descriptor(int pipe_child1[], int pipe_child2[]){
 
   return largest;
 }
-
+/*
 void calculate_time(int *time, struct timeval start, struct timeval end){
      if (end.tv_usec >= start.tv_usec){
         time[0] = (int) end.tv_sec - (int) start.tv_sec; //seconds
@@ -38,6 +38,21 @@ void calculate_time(int *time, struct timeval start, struct timeval end){
         time[0] = (int) end.tv_sec - 1 - (int) start.tv_sec; //seconds
         time[1] = (int) end.tv_usec + 60 + (int) start.tv_usec; //miliseconds
     }
+}*/
+
+void calculate_time(int *time, struct timeval start, struct timeval end){ // x - y
+  if (end.tv_usec < start.tv_usec){
+    int nsec = (start.tv_usec - end.tv_usec) / 1000000 + 1;
+    start.tv_usec -= 1000000 * nsec;
+    start.tv_sec += nsec;
+  }
+  if (end.tv_usec - start.tv_usec > 1000000){
+    int nsec = (end.tv_usec - start.tv_usec) / 1000000;
+    start.tv_usec += 1000000 * nsec;
+    start.tv_sec -= nsec;
+  }
+  time[0] = end.tv_sec - start.tv_sec;
+  time[1] = (end.tv_usec - start.tv_usec) / 1000;
 }
 
 int generateRandomNumber(){
