@@ -29,7 +29,7 @@ int get_largest_file_descriptor(int pipe_child1[], int pipe_child2[]){
   return largest;
 }
 
-void calculate_time(int *time, struct timeval start, struct timeval end){     
+void calculate_time(int *time, struct timeval start, struct timeval end){
      if (end.tv_usec >= start.tv_usec){
         time[0] = (int) end.tv_sec - (int) start.tv_sec; //seconds
         time[1] = (int) end.tv_usec - (int) start.tv_usec; //miliseconds
@@ -65,11 +65,11 @@ int generateRandomNumber(){
 
 double calculate_current_time(struct timeval begin){
     struct timeval end;
-    
+
     gettimeofday(&end, NULL);
-    
+
     double current_time = end.tv_sec - begin.tv_sec;
-    
+
     return current_time;
 }
 
@@ -88,6 +88,13 @@ int main(void)
     fd_set write_set, error;
     is_parent_running = mmap(NULL, sizeof *is_parent_running, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *is_parent_running = 1;
+
+    FILE *file = fopen("output.txt", "w");
+    if (file == NULL)
+    {
+        printf("Error opening file!\n");
+        exit(1);
+    }
 
     gettimeofday(&start, NULL);
 
@@ -115,7 +122,7 @@ int main(void)
             close(pipe_child1[READ]);
 
             gettimeofday(&end_child1, NULL);
-     
+
             calculate_time(time, start, end_child1);
 
             message_number_child1++;
@@ -123,7 +130,7 @@ int main(void)
 
             /* Escrevendo a string no pipe */
             write(pipe_child1[WRITE], sleeper_child_message, sizeof(sleeper_child_message) + 1);
-            
+
             sleep(generateRandomNumber());
         }
     }
@@ -139,70 +146,74 @@ int main(void)
         struct timeval end_child2;
             /*Como o child2 irá ESCREVER, fecha-se a LEITURA do Pipe neste lado*/
             close(pipe_child2[READ]);
-            
+
             message_number_child2++;
-            
-            gettimeofday(&end_child2, NULL);
-            
-            calculate_time(time, start, end_child2);
-            
+
+            char end_of_final_message[BUFFER];
             char final_message[BUFFER];
-            sprintf(final_message, "0:%02d.%03d: Mensagem %02d do filho ativo <", time[0], time[1], message_number_child2);
+            sprintf(end_of_final_message, "Mensagem %02d do filho ativo <", message_number_child2);
+
 
             scanf("%s", user_message);
             getchar();
-            
+
             strcat(user_message, ">");
-            strcat(final_message, user_message);
-               
+            strcat(end_of_final_message, user_message);
+
+            gettimeofday(&end_child2, NULL);
+            calculate_time(time, start, end_child2);
+
+            sprintf(final_message, "0:%02d.%03d:", time[0], time[1]);
+
+            strcat(final_message, end_of_final_message);
+
             if (write(pipe_child2[WRITE], final_message, strlen(final_message) + 1) != strlen(final_message) + 1){
                 printf("Error writing to the pipe.");
                 _exit(EXIT_FAILURE);
             }
         }
     }
-    
-    FILE *file = fopen("output.txt", "w");
-    if (file == NULL)
-    {
-        printf("Error opening file!\n");
-        exit(1);
-    }
-    
+
+
+
     int result;
-    while(calculate_current_time(start) < 30){        
+    while(calculate_current_time(start) < 30){
+        char str_recebida_child1[BUFFER];
+        char str_recebida_child2[BUFFER];
+
         FD_ZERO(&read_set);
         FD_SET(pipe_child1[READ], &read_set);
         FD_SET(pipe_child2[READ], &read_set);
 
         result = select(get_largest_file_descriptor(pipe_child1, pipe_child2)+1, &read_set, NULL, NULL, NULL);
-        
+
         /* Processo Pai*/
-        char str_recebida_child1[BUFFER];
-        char str_recebida_child2[BUFFER];
-        
+
+
         if (result != -1){
             if (FD_ISSET(pipe_child1[READ], &read_set)){
                 close(pipe_child1[WRITE]);
                 /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida' */
                 read(pipe_child1[READ], str_recebida_child1, sizeof(str_recebida_child1));
                 printf("%s\n", str_recebida_child1);
+                fprintf(file, "%s\n", str_recebida_child1);
             }
             if (FD_ISSET(pipe_child2[READ], &read_set)){
                 close(pipe_child2[WRITE]);
                 /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida' */
                 read(pipe_child2[READ], str_recebida_child2, sizeof(str_recebida_child2));
                 printf("%s\n", str_recebida_child2);
+                fprintf(file, "%s\n", str_recebida_child2);
             }
         }
         if (result == -1)
             perror("select()");
     }
-    
+
     fclose(file);
-       
+
     *is_parent_running=0;
-    
+
     wait(NULL);
 
     return(0);
