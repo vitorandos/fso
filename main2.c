@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 
-#define BUFFER 50
+#define BUFFER 10000
 #define READ 0
 #define WRITE 1
 
@@ -28,17 +28,6 @@ int get_largest_file_descriptor(int pipe_child1[], int pipe_child2[]){
 
   return largest;
 }
-/*
-void calculate_time(int *time, struct timeval start, struct timeval end){
-     if (end.tv_usec >= start.tv_usec){
-        time[0] = (int) end.tv_sec - (int) start.tv_sec; //seconds
-        time[1] = (int) end.tv_usec - (int) start.tv_usec; //miliseconds
-     }
-     else{
-        time[0] = (int) end.tv_sec - 1 - (int) start.tv_sec; //seconds
-        time[1] = (int) end.tv_usec + 60 + (int) start.tv_usec; //miliseconds
-    }
-}*/
 
 void calculate_time(int *time, struct timeval start, struct timeval end){ // x - y
   if (end.tv_usec < start.tv_usec){
@@ -170,9 +159,9 @@ int main(void)
             char final_message[BUFFER];
             sprintf(end_of_final_message, "Mensagem %02d do filho ativo <", message_number_child2);
 
-
-            scanf("%s", user_message);
-            getchar();
+            fflush(stdin);
+            __fpurge(stdin);
+            scanf("%[^\n]", user_message);
 
             strcat(user_message, ">");
             strcat(end_of_final_message, user_message);
@@ -190,8 +179,6 @@ int main(void)
             }
         }
     }
-
-
 
     int result;
 
@@ -223,7 +210,6 @@ int main(void)
                   calculate_time(time_child1, start, end);
                   sprintf(final_string1, "0:%02d.%03d:\t", time_child1[0], time_child1[1]);
                   strcat(final_string1, str_recebida_child1);
-                  printf("%s\n", final_string1);
                   fprintf(file, "%s\n", final_string1);
                 }
 
@@ -236,7 +222,6 @@ int main(void)
                   calculate_time(time_child2, start, end);
                   sprintf(final_string2, "0:%02d.%03d:\t", time_child2[0], time_child2[1]);
                   strcat(final_string2, str_recebida_child2);
-                  printf("%s\n", final_string2);
                   fprintf(file, "%s\n", final_string2);
                 }
             }
