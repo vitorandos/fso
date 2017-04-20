@@ -51,8 +51,8 @@ void calculate_time(int *time, struct timeval start, struct timeval end){ // x -
     start.tv_usec += 1000000 * nsec;
     start.tv_sec -= nsec;
   }
-  time[0] = end.tv_sec - start.tv_sec;
-  time[1] = (end.tv_usec - start.tv_usec) / 1000;
+  time[0] = end.tv_sec - start.tv_sec; // seconds
+  time[1] = (end.tv_usec - start.tv_usec) / 1000; // miliseconds
 }
 
 int generateRandomNumber(){
