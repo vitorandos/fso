@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define  FALSE 0
 #define  TRUE  1
@@ -26,6 +27,7 @@ static volatile int keepRunning = 1;
 int buffer[50];
 int buffer_position = -1;
 int estado = BUFFERVAZIO;
+FILE *file;
 
 void intHandler(int dummy) {
     keepRunning = 0;
@@ -67,6 +69,7 @@ void produtor(){
     buffer_position++;
     buffer[buffer_position] = randomNumber;
     printf("numero gerado: %d escrito em %d\n", randomNumber, buffer_position);
+    fprintf(file, "[producao] Numero gerado: %d\n", randomNumber);
     if (buffer_position > 0 && buffer_position < 50)
       estado = BUFFERCOMITENS;
     else if(buffer_position == 50)
@@ -80,11 +83,11 @@ void produtor(){
   pthread_exit(0);
 }
 
-void consumidor(int *id){
+void consumidor(char *id){
 	int item;
 	int aguardar;
 
-	printf("Inicio consumidor %d \n", *id);
+	printf("Inicio consumidor %c \n", *id);
 	while (keepRunning){
     // retirar item da fila
     do {
@@ -104,13 +107,14 @@ void consumidor(int *id){
     }
 
 	  // processar item
-    printf("Consumidor %d consumiu item %d\n", *id, item);
+    printf("Consumidor %c consumiu item %d\n", *id, item);
+    fprintf(file, "[consumo %c]: Numero lido: %d\n", *id, item);
 		buffer_position--;
     printf("buffer %d\n", buffer_position);
     pthread_mutex_unlock(&mutex);
  	  usleep(150000);
   }
-	printf("Consumidor %d terminado \n", *id);
+	printf("Consumidor %c terminado \n", *id);
   pthread_exit(0);
 }
 
@@ -119,8 +123,28 @@ int main(int argc, char const *argv[]){
 	pthread_t prod1;
 	pthread_t cons1;
 	pthread_t cons2;
-  int id_consumidor1 = 1;
-  int id_consumidor2 = 2;
+  char id_consumidor1 = 'a';
+  char id_consumidor2 = 'b';
+  char file_name[100] = "";
+
+  if (argc > 1){
+    strcat(file_name, argv[1]);
+    for (int arg_position = 2; argv[arg_position] != '\0'; arg_position++){
+      strcat(file_name, " ");
+      strcat(file_name, argv[arg_position]);
+    }
+    strcat(file_name, ".txt");
+  } else {
+    strcat(file_name, "output.txt");
+    printf("Nenhum nome de arquivo especifico foi dado, será criado um arquivo com o nome padrão \"%s\"\n", file_name);
+  }
+
+  file = fopen(file_name, "w");
+  if (file == NULL)
+  {
+      printf("Erro ao abrir arquivo!\n");
+      exit(1);
+  }
 
 	printf("Iniciando variaveis de sincronizacao.\n");
 	pthread_mutex_init(&mutex,NULL);
