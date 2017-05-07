@@ -3,11 +3,12 @@
 // Utiliza a biblioteca pthreads.
 // para compilar:  cc -o phtread pthread.c -lpthread
 
-#include <stdio.h>       
+#include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define  FALSE 0
 #define  TRUE  1
@@ -33,7 +34,7 @@ void *handleInput(void *arguments) {
    char user_message[1000];
    signal(SIGINT, intHandler);
 
-   while (keepRunning) { 
+   while (keepRunning) {
     scanf("%[^\n]", user_message);
    }
 
@@ -50,29 +51,29 @@ void produtor(){
 	printf("Inicio produtor\n");
 	while (keepRunning){
         //produzir item
-    	int randomNumber = rand(); 
+    int randomNumber = rand();
 
-        do{
-            pthread_mutex_lock(&mutex);
-        	aguardar = FALSE;
-		    if (estado == BUFFERCHEIO){
+    do{
+      pthread_mutex_lock(&mutex);
+      aguardar = FALSE;
+		  if (estado == BUFFERCHEIO){
 				aguardar = TRUE;
-		        pthread_mutex_unlock(&mutex);
+		    pthread_mutex_unlock(&mutex);
 			}
 		} while (aguardar == TRUE);
 
-    	//inserir item
-        buffer[countProd] = randomNumber;
-        printf("numero gerado: %d escrito em %d\n", randomNumber, countProd);
-        if(countProd == 50)
-    		estado = BUFFERCHEIO;
-    
-    	pthread_mutex_unlock(&mutex);
+    //inserir item
+    buffer[countProd] = randomNumber;
+    printf("numero gerado: %d escrito em %d\n", randomNumber, countProd);
+    if(countProd == 50)
+      estado = BUFFERCHEIO;
+
+    pthread_mutex_unlock(&mutex);
 		countProd++;
-		usleep(100);
+		usleep(100000);
     }
-    
-	printf("Produtor terminado \n"); 
+
+	printf("Produtor terminado \n");
 }
 
 void consumidor(int id){
@@ -82,54 +83,55 @@ void consumidor(int id){
 
 	printf("Inicio consumidor %d \n",id);
 	while (keepRunning){
-        // retirar item da fila
-        do{
-            pthread_mutex_lock(&mutex);
-		    aguardar = FALSE;
-		    if (estado == BUFFERVAZIO){
-		        aguardar = TRUE;
-				pthread_mutex_unlock(&mutex);
-			}
-        } while (aguardar == TRUE);
-        
-        printf("count = %d\n", countCons);
-	    item = buffer[countCons];
-	    if(countCons == 50){
-	    	estado = BUFFERVAZIO;
-	    	pthread_mutex_unlock(&mutex);
-    	}
+    // retirar item da fila
+    do {
+      pthread_mutex_lock(&mutex);
+		  aguardar = FALSE;
+		  if (estado == BUFFERVAZIO){
+		    aguardar = TRUE;
+			  pthread_mutex_unlock(&mutex);
+		  }
+    } while (aguardar == TRUE);
 
-	    // processar item
-        printf("Consumidor %d consumiu item %d\n", id, item); 
-		countCons++;
- 	    usleep(150);
+    printf("count = %d\n", countCons);
+	  item = buffer[countCons];
+	  if (countCons == 50){
+	    estado = BUFFERVAZIO;
+	    pthread_mutex_unlock(&mutex);
     }
-	printf("Consumidor %d terminado \n", id); 
+
+	  // processar item
+    printf("Consumidor %d consumiu item %d\n", id, item);
+		countCons++;
+ 	  usleep(150000);
+  }
+	printf("Consumidor %d terminado \n", id);
 }
 
-int main()
-{ 
+int main(){
 	pthread_t control;
 	pthread_t prod1;
 	pthread_t cons1;
 	pthread_t cons2;
-	
+  int id_consumidor1 = 1;
+  int id_consumidor2 = 2;
+
 	printf("Iniciando variaveis de sincronizacao.\n");
 	pthread_mutex_init(&mutex,NULL);
-	
+
 	printf("Disparando thread controle\n");
 	pthread_create(&control, NULL, handleInput, NULL);
 
-    printf("Disparando thread produtora\n");
+  printf("Disparando thread produtora\n");
 	pthread_create(&prod1, NULL, (void*) produtor,NULL);
 
-    printf("Disparando threads consumidores\n");
-	pthread_create(&cons1, NULL, (void*) consumidor,1);
-	pthread_create(&cons2, NULL, (void*) consumidor,2);
+  printf("Disparando threads consumidores\n");
+	pthread_create(&cons1, NULL, (void*) consumidor, &id_consumidor1);
+	pthread_create(&cons2, NULL, (void*) consumidor, &id_consumidor2);
 
 	pthread_join(prod1,NULL);
 	pthread_join(cons1,NULL);
 	pthread_join(cons2,NULL);
-	
-    printf("Terminado processo Produtor-Consumidor.\n\n");
+
+  printf("Terminado processo Produtor-Consumidor.\n\n");
 }
