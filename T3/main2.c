@@ -22,11 +22,20 @@ pthread_mutex_t  mutex;
 #define  BUFFERCHEIO 1
 #define  BUFFERCOMITENS 2
 
+//Threads
+pthread_t control;
+pthread_t prod1;
+pthread_t cons1;
+pthread_t cons2;
+
 static volatile int keepRunning = 1;
 
 int buffer[50];
 int buffer_position = -1;
 int estado = BUFFERVAZIO;
+int greatest_number = 0;
+int smallest_number = 0;
+int greatest_buffer_ocupation = 0;
 FILE *file;
 
 void intHandler(int dummy) {
@@ -39,11 +48,25 @@ void *handleInput(void *arguments) {
    signal(SIGINT, intHandler);
 
    while (keepRunning) {
-    scanf("%[^\n]", user_message);
+    //scanf("%[^\n]", user_message);
+    ;
    }
-
    printf("[aviso]: Termino solicitado. Aguardando threads...\n");
-   return (NULL);
+   pthread_join(prod1,NULL);
+   pthread_join(cons1,NULL);
+   pthread_join(cons2,NULL);
+   printf("[aviso] Maior numero gerado: %d\n", greatest_number);
+   fprintf(file, "[aviso] Maior numero gerado: %d\n", greatest_number);
+   printf("[aviso] Menor numero gerado: %d\n", smallest_number);
+   fprintf(file, "[aviso] Menor numero gerado: %d\n", smallest_number);
+   // since the buffer starts in 0, we add 1 to it to really count its ocupation
+   greatest_buffer_ocupation++;
+   printf("[aviso] Maior ocupacao de buffer: %d.\n", greatest_buffer_ocupation);
+   fprintf(file, "[aviso] Maior ocupacao de buffer: %d.\n", greatest_buffer_ocupation);
+   printf("[aviso]: Aplicacao encerrada.\n");
+   fprintf(file, "[aviso]: Aplicacao encerrada.\n");
+   pthread_exit(0);
+   //return (NULL);
 }
 
 void produtor(){
@@ -68,6 +91,9 @@ void produtor(){
     //inserir item
     buffer_position++;
     buffer[buffer_position] = randomNumber;
+
+    if (buffer_position > greatest_buffer_ocupation)
+      greatest_buffer_ocupation = buffer_position;
     printf("numero gerado: %d escrito em %d\n", randomNumber, buffer_position);
     fprintf(file, "[producao] Numero gerado: %d\n", randomNumber);
     if (buffer_position > 0 && buffer_position < 50)
@@ -105,6 +131,10 @@ void consumidor(char *id){
 	    estado = BUFFERVAZIO;
 	    pthread_mutex_unlock(&mutex);
     }
+    if (smallest_number == 0 || item < smallest_number)
+      smallest_number = item;
+    else if (greatest_number == 0 || item > greatest_number)
+      greatest_number = item;
 
 	  // processar item
     printf("Consumidor %c consumiu item %d\n", *id, item);
@@ -119,10 +149,6 @@ void consumidor(char *id){
 }
 
 int main(int argc, char const *argv[]){
-	pthread_t control;
-	pthread_t prod1;
-	pthread_t cons1;
-	pthread_t cons2;
   char id_consumidor1 = 'a';
   char id_consumidor2 = 'b';
   char file_name[100] = "";
@@ -136,7 +162,7 @@ int main(int argc, char const *argv[]){
     strcat(file_name, ".txt");
   } else {
     strcat(file_name, "output.txt");
-    printf("Nenhum nome de arquivo especifico foi dado, será criado um arquivo com o nome padrão \"%s\"\n", file_name);
+    printf("Nenhum nome de arquivo especifico foi dado, será criado um arquivo com o nome padrão \"%s\".\n", file_name);
   }
 
   file = fopen(file_name, "w");
@@ -159,9 +185,6 @@ int main(int argc, char const *argv[]){
 	pthread_create(&cons1, NULL, (void*) consumidor, &id_consumidor1);
 	pthread_create(&cons2, NULL, (void*) consumidor, &id_consumidor2);
 
-	pthread_join(prod1,NULL);
-	pthread_join(cons1,NULL);
-	pthread_join(cons2,NULL);
-
+  pthread_join(control, NULL);
   printf("Terminado processo Produtor-Consumidor.\n\n");
 }
