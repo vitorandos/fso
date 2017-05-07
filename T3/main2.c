@@ -24,7 +24,7 @@ pthread_mutex_t  mutex;
 static volatile int keepRunning = 1;
 
 int buffer[50];
-int buffer_position = 0;
+int buffer_position = -1;
 int estado = BUFFERVAZIO;
 
 void intHandler(int dummy) {
@@ -64,6 +64,7 @@ void produtor(){
 		} while (aguardar == TRUE);
 
     //inserir item
+    buffer_position++;
     buffer[buffer_position] = randomNumber;
     printf("numero gerado: %d escrito em %d\n", randomNumber, buffer_position);
     if (buffer_position > 0 && buffer_position < 50)
@@ -72,7 +73,6 @@ void produtor(){
       estado = BUFFERCHEIO;
 
     pthread_mutex_unlock(&mutex);
-		buffer_position++;
 		usleep(100000);
     }
 
@@ -83,7 +83,6 @@ void produtor(){
 void consumidor(int *id){
 	int item;
 	int aguardar;
-	int buffer_position = 0;
 
 	printf("Inicio consumidor %d \n", *id);
 	while (keepRunning){
@@ -107,13 +106,15 @@ void consumidor(int *id){
 	  // processar item
     printf("Consumidor %d consumiu item %d\n", *id, item);
 		buffer_position--;
+    printf("buffer %d\n", buffer_position);
+    pthread_mutex_unlock(&mutex);
  	  usleep(150000);
   }
 	printf("Consumidor %d terminado \n", *id);
   pthread_exit(0);
 }
 
-int main(){
+int main(int argc, char const *argv[]){
 	pthread_t control;
 	pthread_t prod1;
 	pthread_t cons1;
