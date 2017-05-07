@@ -19,10 +19,12 @@ pthread_mutex_t  mutex;
 //Buffer
 #define  BUFFERVAZIO 0
 #define  BUFFERCHEIO 1
+#define  BUFFERCOMITENS 2
 
 static volatile int keepRunning = 1;
 
 int buffer[50];
+int buffer_position = 0;
 int estado = BUFFERVAZIO;
 
 void intHandler(int dummy) {
@@ -45,7 +47,6 @@ void *handleInput(void *arguments) {
 void produtor(){
 	int i=0;
     int aguardar;
-    int countProd = 0;
     srand((unsigned int) time(NULL));
 
 	printf("Inicio produtor\n");
@@ -63,25 +64,28 @@ void produtor(){
 		} while (aguardar == TRUE);
 
     //inserir item
-    buffer[countProd] = randomNumber;
-    printf("numero gerado: %d escrito em %d\n", randomNumber, countProd);
-    if(countProd == 50)
+    buffer[buffer_position] = randomNumber;
+    printf("numero gerado: %d escrito em %d\n", randomNumber, buffer_position);
+    if (buffer_position > 0 && buffer_position < 50)
+      estado = BUFFERCOMITENS;
+    else if(buffer_position == 50)
       estado = BUFFERCHEIO;
 
     pthread_mutex_unlock(&mutex);
-		countProd++;
+		buffer_position++;
 		usleep(100000);
     }
 
 	printf("Produtor terminado \n");
+  pthread_exit(0);
 }
 
-void consumidor(int id){
+void consumidor(int *id){
 	int item;
 	int aguardar;
-	int countCons = 0;
+	int buffer_position = 0;
 
-	printf("Inicio consumidor %d \n",id);
+	printf("Inicio consumidor %d \n", *id);
 	while (keepRunning){
     // retirar item da fila
     do {
@@ -93,19 +97,20 @@ void consumidor(int id){
 		  }
     } while (aguardar == TRUE);
 
-    printf("count = %d\n", countCons);
-	  item = buffer[countCons];
-	  if (countCons == 50){
+    printf("count = %d\n", buffer_position);
+	  item = buffer[buffer_position];
+	  if (buffer_position == 0){
 	    estado = BUFFERVAZIO;
 	    pthread_mutex_unlock(&mutex);
     }
 
 	  // processar item
-    printf("Consumidor %d consumiu item %d\n", id, item);
-		countCons++;
+    printf("Consumidor %d consumiu item %d\n", *id, item);
+		buffer_position--;
  	  usleep(150000);
   }
-	printf("Consumidor %d terminado \n", id);
+	printf("Consumidor %d terminado \n", *id);
+  pthread_exit(0);
 }
 
 int main(){
