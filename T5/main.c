@@ -22,36 +22,48 @@ void search_directory(const char *directory_path, const char *search_string, int
     if (!(entry = readdir(physical_directory)))
         return;
 
+    // check files
     do {
-        if (entry->d_type == DT_DIR) {
-            char path[1024];
-            int len = snprintf(path, sizeof(path)-1, "%s/%s", directory_path, entry->d_name);
-            path[len] = 0;
-            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-                continue;
-            search_directory(path, search_string, max_lines);
-        }
-        else {
-            if ((strstr(entry->d_name, search_string) != NULL) && lines_printed < max_lines){
-              FILE *file;
-              char file_path[100] = "";
-              strcat(file_path, directory_path);
-              strcat(file_path, "/");
-              strcat(file_path, entry->d_name);
+      if (entry->d_type == DT_REG){
+        if ((strstr(entry->d_name, search_string) != NULL) && lines_printed < max_lines){
+          FILE *file;
+          char file_path[100] = "";
+          strcat(file_path, directory_path);
+          strcat(file_path, "/");
+          strcat(file_path, entry->d_name);
 
-              file = fopen(file_path, "rb");
-              if (!file){
-                printf("Erro ao abrir arquivo.\n");
-              }
-              char line[50];
-              int end = fread(line, 1, 30, file);
-              line[end] = 0;
-              printf("%d%s --\n%s\n", lines_printed + 1, file_path, line);
-              lines_printed++;
+          file = fopen(file_path, "rb");
+          if (!file){
+            printf("Erro ao abrir arquivo.\n");
+          }
+          char line[50];
+          int end = fread(line, 1, 30, file);
+          line[end] = 0;
+          printf("%d%s --\n%s\n", lines_printed + 1, file_path, line);
+          lines_printed++;
 
-              fclose(file);
-            }
+          fclose(file);
         }
+      }
+    } while (entry = readdir(physical_directory));
+
+    closedir(physical_directory);
+
+    if (!(physical_directory = opendir(directory_path)))
+        return;
+    if (!(entry = readdir(physical_directory)))
+        return;
+
+    // check directories
+    do {
+      if (entry->d_type == DT_DIR) {
+          char path[1024];
+          int len = snprintf(path, sizeof(path)-1, "%s/%s", directory_path, entry->d_name);
+          path[len] = 0;
+          if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+              continue;
+          search_directory(path, search_string, max_lines);
+      }
     } while (entry = readdir(physical_directory));
 
     closedir(physical_directory);
