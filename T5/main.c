@@ -8,10 +8,9 @@
 
 int lines_printed = 0;
 
+void search_directory(const char *directory_path, const char *search_string, int max_lines){
 
-void search_directory(const char *directory_path, const char *search_string){
-
-    if (lines_printed == 4){
+    if (lines_printed == max_lines){
       return ;
     }
 
@@ -30,10 +29,10 @@ void search_directory(const char *directory_path, const char *search_string){
             path[len] = 0;
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
                 continue;
-            search_directory(path, search_string);
+            search_directory(path, search_string, max_lines);
         }
         else {
-            if ((strstr(entry->d_name, search_string) != NULL) && lines_printed < 4){
+            if ((strstr(entry->d_name, search_string) != NULL) && lines_printed < max_lines){
               FILE *file;
               char file_path[100] = "";
               strcat(file_path, directory_path);
@@ -70,27 +69,11 @@ int main(int argc, char const *argv[]) {
     max_lines = strtol(argv[3], &end, 10);
   } else {
     printf("Erro nos parametros de entrada.\n");
+    return 0;
   }
 
-  printf("%s\n", path);
-  printf("%s\n", search_string);
-  printf("%d\n", max_lines);
-
-  const char *home_directory;
-
-  if ((home_directory = getenv("HOME")) == NULL){
-    home_directory = getpwuid(getuid())->pw_dir;
-  }
-
-  search_directory(path, search_string);
-  /*
-  char *directory_to_be_open = "./";
-  int path_char_position = 0;
-
-  for (; path[path_char_position] != '/'; ++path_char_position){
-    strcat(directory_to_be_open, &path[path_char_position]);
-  }*/
-
+  printf("Resultado de buscador -- \"%s\" na pasta %s\n", search_string, argv[1]);
+  search_directory(path, search_string, max_lines);
 
   return 0;
 }
